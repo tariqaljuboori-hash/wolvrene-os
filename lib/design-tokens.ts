@@ -1,4 +1,4 @@
-// WOLVRENE Design Tokens
+// wolvrene-os design tokens
 
 export const designTokens = {
   colors: {

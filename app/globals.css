@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  /* WOLVRENE Design System */
+  /* wolvrene-os design system */
   --background: #0a0a0b;
   --foreground: #fafafa;
   
@@ -23,15 +23,15 @@
   --color-border-hover: #3f3f46;
   
   /* Typography */
-  --font-body: var(--font-body);
-  --font-mono: var(--font-mono);
+  --font-body: "Inter", "Segoe UI", "Roboto", sans-serif;
+  --font-mono: "JetBrains Mono", "SFMono-Regular", "Menlo", monospace;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-body);
-  --font-mono: var(--font-mono);
+  --font-mono: "JetBrains Mono", "SFMono-Regular", "Menlo", monospace;
 }
 
 * {

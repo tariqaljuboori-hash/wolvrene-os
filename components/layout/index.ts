@@ -1,6 +1,10 @@
-// filepath: components/layout/index.ts
 export { AppShell } from './AppShell';
+export { TopHeader } from './TopHeader';
 export { DrawingToolbar } from './DrawingToolbar';
-export { TradingControls } from './TradingControls';
 export { RightPanel } from './RightPanel';
-export { Dock } from './Dock';
+export { WatchlistPanel } from './WatchlistPanel';
+export { OrderPanel } from './OrderPanel';
+export { AICommandPanel } from './AICommandPanel';
+export { BottomDock } from './BottomDock';
+export { BottomInsights } from './BottomInsights';
+export { StatusNewsBar } from './StatusNewsBar';

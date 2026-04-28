@@ -25,7 +25,7 @@ export function Toolbar() {
           <div className="w-8 h-8 bg-gradient-to-br from-[#d4a853] to-[#e87b3a] rounded-lg flex items-center justify-center">
             <span className="text-[#0a0a0b] font-bold text-lg">W</span>
           </div>
-          <span className="text-[#fafafa] font-semibold text-lg tracking-tight">WOLVRENE</span>
+          <span className="text-[#fafafa] font-semibold text-lg tracking-tight">wolvrene-os</span>
         </div>
       </div>
 

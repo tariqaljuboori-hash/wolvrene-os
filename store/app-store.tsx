@@ -2,7 +2,7 @@
 'use client';
 
 import { createContext, useContext, useState, ReactNode } from 'react';
-import { AppState, WatchlistItem, Signal, Order, JournalEntry, FeatureGate } from '@/types/store';
+import { AppState, WatchlistItem, Signal, Order, JournalEntry, FeatureGate, RightPanelTab, DockTab } from '@/types/store';
 
 // Mock Data
 const mockWatchlist: WatchlistItem[] = [
@@ -47,6 +47,10 @@ interface StoreContextType {
   journal: JournalEntry[];
   featureGates: FeatureGate[];
   setLayoutMode: (mode: 'normal' | 'pro') => void;
+  setCurrentSymbol: (symbol: string) => void;
+  setCurrentTimeframe: (timeframe: string) => void;
+  setRightPanelTab: (tab: RightPanelTab) => void;
+  setDockTab: (tab: DockTab) => void;
   toggleSidebar: () => void;
   toggleRightPanel: () => void;
   toggleDock: () => void;
@@ -59,6 +63,10 @@ const defaultState: AppState = {
   rightPanelCollapsed: false,
   dockCollapsed: false,
   currentTier: 'free',
+  currentSymbol: 'BTCUSDT.P',
+  currentTimeframe: '2h',
+  activeRightPanelTab: 'watchlist',
+  activeDockTab: 'positions',
 };
 
 const StoreContext = createContext<StoreContextType | null>(null);
@@ -72,6 +80,22 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const setLayoutMode = (mode: 'normal' | 'pro') => {
     setState(prev => ({ ...prev, layoutMode: mode }));
+  };
+
+  const setCurrentSymbol = (symbol: string) => {
+    setState(prev => ({ ...prev, currentSymbol: symbol }));
+  };
+
+  const setCurrentTimeframe = (timeframe: string) => {
+    setState(prev => ({ ...prev, currentTimeframe: timeframe }));
+  };
+
+  const setRightPanelTab = (tab: RightPanelTab) => {
+    setState(prev => ({ ...prev, activeRightPanelTab: tab }));
+  };
+
+  const setDockTab = (tab: DockTab) => {
+    setState(prev => ({ ...prev, activeDockTab: tab }));
   };
 
   const toggleSidebar = () => {
@@ -101,6 +125,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       journal,
       featureGates,
       setLayoutMode,
+      setCurrentSymbol,
+      setCurrentTimeframe,
+      setRightPanelTab,
+      setDockTab,
       toggleSidebar,
       toggleRightPanel,
       toggleDock,
