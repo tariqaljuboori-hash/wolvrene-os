@@ -1,331 +1,132 @@
 'use client';
 
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, ReactNode, useContext, useMemo, useState } from 'react';
 import {
-  AppState,
-  WatchlistItem,
-  Signal,
-  Order,
-  JournalEntry,
-  FeatureGate,
-  RightPanelTab,
+  AccountSlice,
+  ChartSlice,
   DockTab,
-  Timeframe,
-  DataFeedStatus,
+  DrawingEntity,
   ExchangeId,
-  MarketData,
+  JournalEntry,
+  JournalSlice,
+  MarketCategory,
+  MarketSlice,
+  Order,
+  RightPanelTab,
+  SignalsSlice,
+  SubscriptionsSlice,
+  SystemSlice,
+  Timeframe,
+  ToolsSlice,
+  UiSlice,
+  WatchlistItem,
 } from '@/types/store';
-
-const defaultWatchlist: WatchlistItem[] = [
-  {
-    id: 'btc-binance',
-    symbol: 'BTCUSDT.P',
-    exchangeSymbol: 'BTCUSDT',
-    exchange: 'binance',
-    name: 'Bitcoin',
-    price: 76778.2,
-    change: 176.9,
-    changePercent: 0.23,
-    volume: 54530000,
-  },
-  {
-    id: 'eth-binance',
-    symbol: 'ETHUSDT.P',
-    exchangeSymbol: 'ETHUSDT',
-    exchange: 'binance',
-    name: 'Ethereum',
-    price: 3573.21,
-    change: 45.32,
-    changePercent: 1.28,
-    volume: 31221000,
-  },
-  {
-    id: 'sol-binance',
-    symbol: 'SOLUSDT.P',
-    exchangeSymbol: 'SOLUSDT',
-    exchange: 'binance',
-    name: 'Solana',
-    price: 172.48,
-    change: 2.47,
-    changePercent: 1.45,
-    volume: 12341000,
-  },
-
-  {
-    id: 'eurusd-yahoo',
-    symbol: 'EURUSD',
-    exchangeSymbol: 'EURUSD=X',
-    exchange: 'yahoo',
-    name: 'Euro / US Dollar',
-    price: 0,
-    change: 0,
-    changePercent: 0,
-    volume: 0,
-  },
-  {
-    id: 'gbpusd-yahoo',
-    symbol: 'GBPUSD',
-    exchangeSymbol: 'GBPUSD=X',
-    exchange: 'yahoo',
-    name: 'British Pound / US Dollar',
-    price: 0,
-    change: 0,
-    changePercent: 0,
-    volume: 0,
-  },
-  {
-    id: 'nas100-yahoo',
-    symbol: 'NAS100',
-    exchangeSymbol: '^NDX',
-    exchange: 'yahoo',
-    name: 'Nasdaq 100',
-    price: 0,
-    change: 0,
-    changePercent: 0,
-    volume: 0,
-  },
-  {
-    id: 'us30-yahoo',
-    symbol: 'US30',
-    exchangeSymbol: '^DJI',
-    exchange: 'yahoo',
-    name: 'Dow Jones',
-    price: 0,
-    change: 0,
-    changePercent: 0,
-    volume: 0,
-  },
-  {
-    id: 'gold-yahoo',
-    symbol: 'GOLD',
-    exchangeSymbol: 'GC=F',
-    exchange: 'yahoo',
-    name: 'Gold Futures',
-    price: 0,
-    change: 0,
-    changePercent: 0,
-    volume: 0,
-  },
-  {
-    id: 'silver-yahoo',
-    symbol: 'SILVER',
-    exchangeSymbol: 'SI=F',
-    exchange: 'yahoo',
-    name: 'Silver Futures',
-    price: 0,
-    change: 0,
-    changePercent: 0,
-    volume: 0,
-  },
-];
-
-const mockSignals: Signal[] = [
-  {
-    id: '1',
-    symbol: 'BTCUSDT.P',
-    type: 'buy',
-    strength: 68,
-    timestamp: new Date(),
-    reason: 'Liquidity sweep detected',
-  },
-];
-
-const mockOrders: Order[] = [];
-const mockJournal: JournalEntry[] = [];
-const featureGates: FeatureGate[] = [];
+import { TierLevel } from '@/types/design';
+import { getCoreMarkets, resolveRequestSymbol } from '@/lib/market/symbol-registry';
 
 interface StoreContextType {
-  state: AppState;
+  ui: UiSlice;
+  market: MarketSlice;
+  chart: ChartSlice;
+  tools: ToolsSlice;
+  account: AccountSlice;
+  subscriptions: SubscriptionsSlice;
+  signals: SignalsSlice;
+  journal: JournalSlice;
+  system: SystemSlice;
   watchlist: WatchlistItem[];
-  signals: Signal[];
   orders: Order[];
-  journal: JournalEntry[];
-  featureGates: FeatureGate[];
-  marketData: MarketData | null;
 
-  setLayoutMode: (mode: 'normal' | 'pro') => void;
-  setCurrentSymbol: (
-    symbol: string,
-    exchangeSymbol?: string,
-    exchange?: ExchangeId
-  ) => void;
-  setCurrentExchange: (exchange: ExchangeId) => void;
-  setCurrentTimeframe: (timeframe: Timeframe) => void;
-  setActiveDrawingTool: (tool: string) => void;
-  setRightPanelTab: (tab: RightPanelTab) => void;
+  setLayoutMode: (mode: UiSlice['layoutMode']) => void;
+  setCurrentTier: (tier: TierLevel) => void;
+  setMarketSelection: (args: { category?: MarketCategory; exchange?: ExchangeId; displaySymbol?: string; requestSymbol?: string; timeframe?: Timeframe }) => void;
+  setMarketSnapshot: (args: Partial<Pick<MarketSlice, 'livePrice' | 'change' | 'changePercent' | 'high24h' | 'low24h' | 'volume24h' | 'funding' | 'connected' | 'loading' | 'error'>>) => void;
   setDockTab: (tab: DockTab) => void;
-
-  setDataFeedStatus: (status: DataFeedStatus) => void;
-  setLastMarketUpdate: (time: number) => void;
-  updateMarketData: (data: MarketData | null) => void;
-
-  toggleSidebar: () => void;
-  toggleRightPanel: () => void;
-  toggleDock: () => void;
-
-  hasAccess: (featureKey: string) => boolean;
+  setRightPanelTab: (tab: RightPanelTab) => void;
+  setActiveTool: (tool: string) => void;
+  addDrawing: (drawing: Omit<DrawingEntity, 'id'>) => void;
+  clearDrawings: () => void;
+  setSignalLifecycle: (args: Partial<Pick<SignalsSlice, 'lifecycle' | 'confidence' | 'explanation'>>) => void;
+  hasAccess: (feature: string) => boolean;
 }
 
-const defaultState: AppState = {
-  layoutMode: 'normal',
-  sidebarCollapsed: false,
-  rightPanelCollapsed: false,
-  dockCollapsed: false,
-
-  currentTier: 'free',
-
-  currentExchange: 'binance',
-  currentSymbol: 'BTCUSDT.P',
-  currentExchangeSymbol: 'BTCUSDT',
-  currentTimeframe: '2h',
-  activeDrawingTool: 'Crosshair',
-
-  dataFeedStatus: 'idle',
-  lastMarketUpdate: null,
-
-  activeRightPanelTab: 'watchlist',
-  activeDockTab: 'positions',
-};
+const defaultWatchlist: WatchlistItem[] = getCoreMarkets().map((m, i) => ({
+  id: `${m.display}-${i}`,
+  exchange: m.category === 'crypto' ? 'binance' : 'yahoo',
+  category: m.category,
+  displaySymbol: m.display,
+  requestSymbol: resolveRequestSymbol(m.display, m.category === 'crypto' ? 'binance' : 'yahoo'),
+  base: m.base,
+  name: m.name,
+}));
 
 const StoreContext = createContext<StoreContextType | null>(null);
 
 export function StoreProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<AppState>(defaultState);
-
+  const [ui, setUi] = useState<UiSlice>({ layoutMode: 'normal', sidebarCollapsed: false, rightPanelCollapsed: false, dockCollapsed: false, activeDockTab: 'positions', activeRightPanelTab: 'watchlist' });
+  const [market, setMarket] = useState<MarketSlice>({ category: 'crypto', exchange: 'binance', source: 'crypto', symbolDisplay: 'BTCUSDT.P', symbolRequest: 'BTCUSDT', timeframe: '2h', livePrice: 0, change: 0, changePercent: 0, high24h: 0, low24h: 0, volume24h: 0, funding: 0, connected: false, loading: false, error: null, lastUpdate: null });
+  const [chart] = useState<ChartSlice>({ loading: false, error: null });
+  const [tools, setTools] = useState<ToolsSlice>({ activeTool: 'Crosshair', toolOptions: {}, drawings: [] });
+  const [account, setAccount] = useState<AccountSlice>({ tier: 'free' });
+  const [subscriptions] = useState<SubscriptionsSlice>({ featureMatrix: { 'decision-brain': ['pro', 'elite'], 'risk-engine': ['pro', 'elite'], 'market-scanner': ['elite'], 'community-chat': ['pro', 'elite'] } });
+  const [signals, setSignals] = useState<SignalsSlice>({ lifecycle: 'WATCHING', confidence: 52, explanation: 'Monitoring confluence and waiting for confirmation.', items: [] });
+  const [journal] = useState<JournalSlice>({ entries: [] as JournalEntry[] });
+  const [system] = useState<SystemSlice>({ dataFeedStatus: 'idle' });
   const [watchlist] = useState(defaultWatchlist);
-  const [signals] = useState(mockSignals);
-  const [orders] = useState(mockOrders);
-  const [journal] = useState(mockJournal);
-  const [marketData, setMarketData] = useState<MarketData | null>(null);
+  const [orders] = useState<Order[]>([]);
 
-  const setLayoutMode = (mode: 'normal' | 'pro') => {
-    setState((prev) => ({ ...prev, layoutMode: mode }));
+  const hasAccess = (feature: string) => {
+    const required = subscriptions.featureMatrix[feature];
+    if (!required) return true;
+    return required.includes(account.tier);
   };
 
-  const setCurrentSymbol = (
-    symbol: string,
-    exchangeSymbol?: string,
-    exchange?: ExchangeId
-  ) => {
-    const cleanExchangeSymbol =
-      exchangeSymbol ?? symbol.replace('.P', '').replace('/', '');
+  const value = useMemo<StoreContextType>(() => ({
+    ui,
+    market,
+    chart,
+    tools,
+    account,
+    subscriptions,
+    signals,
+    journal,
+    system,
+    watchlist,
+    orders,
+    setLayoutMode: (mode) => setUi((p) => ({ ...p, layoutMode: mode })),
+    setCurrentTier: (tier) => setAccount({ tier }),
+    setMarketSelection: ({ category, exchange, displaySymbol, requestSymbol, timeframe }) => {
+      setMarket((p) => {
+        const nextExchange = exchange ?? p.exchange;
+        const nextDisplay = displaySymbol ?? p.symbolDisplay;
+        return {
+          ...p,
+          category: category ?? p.category,
+          exchange: nextExchange,
+          source: (category ?? p.category) === 'crypto' ? 'crypto' : 'yahoo',
+          symbolDisplay: nextDisplay,
+          symbolRequest: requestSymbol ?? resolveRequestSymbol(nextDisplay, nextExchange),
+          timeframe: timeframe ?? p.timeframe,
+          loading: true,
+          error: null,
+        };
+      });
+    },
+    setMarketSnapshot: (args) => setMarket((p) => ({ ...p, ...args, lastUpdate: Date.now() })),
+    setDockTab: (tab) => setUi((p) => ({ ...p, activeDockTab: tab })),
+    setRightPanelTab: (tab) => setUi((p) => ({ ...p, activeRightPanelTab: tab })),
+    setActiveTool: (tool) => setTools((p) => ({ ...p, activeTool: tool })),
+    addDrawing: (drawing) => setTools((p) => ({ ...p, drawings: [...p.drawings.slice(-40), { ...drawing, id: `${Date.now()}-${Math.random()}` }] })),
+    clearDrawings: () => setTools((p) => ({ ...p, drawings: [] })),
+    setSignalLifecycle: (args) => setSignals((p) => ({ ...p, ...args })),
+    hasAccess,
+  }), [ui, market, chart, tools, account, subscriptions, signals, journal, system, watchlist, orders]);
 
-    setState((prev) => ({
-      ...prev,
-      currentSymbol: symbol,
-      currentExchangeSymbol: cleanExchangeSymbol,
-      currentExchange: exchange ?? prev.currentExchange,
-      dataFeedStatus: 'loading',
-      lastMarketUpdate: Date.now(),
-    }));
-  };
-
-  const setCurrentExchange = (exchange: ExchangeId) => {
-    setState((prev) => ({
-      ...prev,
-      currentExchange: exchange,
-      dataFeedStatus: 'loading',
-      lastMarketUpdate: Date.now(),
-    }));
-  };
-
-  const setCurrentTimeframe = (timeframe: Timeframe) => {
-    setState((prev) => ({
-      ...prev,
-      currentTimeframe: timeframe,
-      dataFeedStatus: 'loading',
-      lastMarketUpdate: Date.now(),
-    }));
-  };
-
-  const setActiveDrawingTool = (tool: string) => {
-    setState((prev) => ({ ...prev, activeDrawingTool: tool }));
-  };
-
-  const setRightPanelTab = (tab: RightPanelTab) => {
-    setState((prev) => ({ ...prev, activeRightPanelTab: tab }));
-  };
-
-  const setDockTab = (tab: DockTab) => {
-    setState((prev) => ({ ...prev, activeDockTab: tab }));
-  };
-
-  const setDataFeedStatus = (status: DataFeedStatus) => {
-    setState((prev) => ({ ...prev, dataFeedStatus: status }));
-  };
-
-  const setLastMarketUpdate = (time: number) => {
-    setState((prev) => ({ ...prev, lastMarketUpdate: time }));
-  };
-
-  const updateMarketData = (data: MarketData | null) => {
-    setMarketData(data);
-  };
-
-  const toggleSidebar = () => {
-    setState((prev) => ({
-      ...prev,
-      sidebarCollapsed: !prev.sidebarCollapsed,
-    }));
-  };
-
-  const toggleRightPanel = () => {
-    setState((prev) => ({
-      ...prev,
-      rightPanelCollapsed: !prev.rightPanelCollapsed,
-    }));
-  };
-
-  const toggleDock = () => {
-    setState((prev) => ({
-      ...prev,
-      dockCollapsed: !prev.dockCollapsed,
-    }));
-  };
-
-  const hasAccess = () => true;
-
-  return (
-    <StoreContext.Provider
-      value={{
-        state,
-        watchlist,
-        signals,
-        orders,
-        journal,
-        featureGates,
-        marketData,
-
-        setLayoutMode,
-        setCurrentSymbol,
-        setCurrentExchange,
-        setCurrentTimeframe,
-        setActiveDrawingTool,
-        setRightPanelTab,
-        setDockTab,
-
-        setDataFeedStatus,
-        setLastMarketUpdate,
-        updateMarketData,
-
-        toggleSidebar,
-        toggleRightPanel,
-        toggleDock,
-
-        hasAccess,
-      }}
-    >
-      {children}
-    </StoreContext.Provider>
-  );
+  return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
 }
 
 export function useStore() {
-  const context = useContext(StoreContext);
-
-  if (!context) {
-    throw new Error('useStore must be used within StoreProvider');
-  }
-
-  return context;
+  const ctx = useContext(StoreContext);
+  if (!ctx) throw new Error('useStore must be used within StoreProvider');
+  return ctx;
 }

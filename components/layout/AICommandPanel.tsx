@@ -1,30 +1,37 @@
 'use client';
 
-import Image from 'next/image';
+import { useEffect } from 'react';
+import { useStore } from '@/store/app-store';
+
+const flow = ['WATCHING', 'SPAWNED', 'VALIDATING', 'ARMED'] as const;
 
 export function AICommandPanel() {
+  const { signals, market, hasAccess, setSignalLifecycle, setCurrentTier } = useStore();
+  const locked = !hasAccess('decision-brain');
+
+  useEffect(() => {
+    if (locked) {
+      setSignalLifecycle({ lifecycle: 'NONE', confidence: 0, explanation: 'Upgrade to Pro to enable Decision Brain.' });
+      return;
+    }
+    let idx = 0;
+    setSignalLifecycle({ lifecycle: 'WATCHING', confidence: 52, explanation: `Scanning ${market.symbolDisplay} structure and liquidity.` });
+    const id = setInterval(() => {
+      idx = (idx + 1) % flow.length;
+      const stage = flow[idx];
+      const confidence = stage === 'ARMED' ? 72 : stage === 'VALIDATING' ? 64 : 58;
+      setSignalLifecycle({ lifecycle: stage, confidence, explanation: `${stage} context from ${market.exchange.toUpperCase()} ${market.timeframe} feed.` });
+    }, 7000);
+    return () => clearInterval(id);
+  }, [locked, market.symbolDisplay, market.exchange, market.timeframe, setSignalLifecycle]);
+
   return (
     <section className="rounded-xl bg-[#0b1014] border border-[rgba(212,168,83,0.22)] p-3">
-      <div className="flex items-center justify-between">
-        <h3 className="text-[#f3f4f6] text-xl">WOLVRENE AI COMMAND</h3>
-        <span className="px-2 py-1 text-xs rounded bg-[#1b2028] text-[#f6a400] border border-[rgba(212,168,83,0.25)]">BETA</span>
-      </div>
-      <div className="mt-3 grid grid-cols-[120px_1fr] gap-3">
-        <div className="h-[120px] rounded-full border-4 border-[#f6a400] bg-[#0a1117] grid place-items-center shadow-[0_0_18px_rgba(246,164,0,0.28)]">
-          <Image src="/window.svg" alt="Wolvrene logo" width={64} height={64} className="opacity-95" />
-        </div>
-        <div className="rounded-lg border border-[rgba(212,168,83,0.18)] bg-[#10151b] p-3 text-sm">
-          <div>Trend <span className="text-[#00d084] font-semibold">BULLISH</span></div>
-          <div className="mt-1">Confidence <span className="text-[#f3f4f6] text-3xl">68%</span></div>
-          <ul className="mt-2 list-disc pl-5 text-[#c8ced6] space-y-1">
-            <li>Market structure aligned</li>
-            <li>Liquidity sweep detected</li>
-            <li>High probability setup</li>
-            <li>Next key level: 78,800</li>
-          </ul>
-        </div>
-      </div>
-      <button className="w-full mt-3 h-10 rounded border border-[rgba(212,168,83,0.28)] bg-[#10151b] text-[#f3f4f6]">Open Full Analysis</button>
+      <div className="flex items-center justify-between"><h3 className="text-[#f3f4f6] text-lg">DECISION BRAIN</h3><span className="text-xs text-[#f6a400]">{locked ? 'PRO REQUIRED' : signals.lifecycle}</span></div>
+      <div className="mt-2 text-[#c8ced6] text-sm">{signals.explanation}</div>
+      <div className="mt-3 h-2 bg-[#121920] rounded"><div className="h-full rounded bg-[#f6a400]" style={{ width: `${signals.confidence}%` }} /></div>
+      <div className="mt-2 text-[#f3f4f6] text-sm">Confidence: {signals.confidence}%</div>
+      {locked && <button onClick={() => setCurrentTier('pro')} className="w-full mt-3 h-9 rounded bg-[#2d1f06] text-[#f3d19a]">Upgrade to Pro</button>}
     </section>
   );
 }
