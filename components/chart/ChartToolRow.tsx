@@ -8,6 +8,8 @@ const frames: Timeframe[] = ['1m', '3m', '5m', '15m', '30m', '1h', '2h', '4h', '
 export function ChartToolRow({ onSettings }: { onSettings?: () => void }) {
   const { market, setMarketSelection, hasAccess } = useStore();
 
+export function ChartToolRow({ onSettings }: { onSettings?: () => void }) {
+  const { market, setMarketSelection, hasAccess } = useStore();
   return (
     <div className="h-11 rounded-t-xl border-b border-[rgba(212,168,83,0.18)] bg-[#0b1014] px-3 flex items-center justify-between text-xs gap-2">
       <div className="flex items-center gap-1 overflow-x-auto">

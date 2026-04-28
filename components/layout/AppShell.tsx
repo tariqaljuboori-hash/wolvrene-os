@@ -11,6 +11,7 @@ import { StatusNewsBar } from './StatusNewsBar';
 
 export function AppShell() {
   const { ui } = useStore();
+  const hunt = ui.huntMode;
 
   return (
     <div className="h-screen bg-[#050607] text-[#f3f4f6] flex flex-col overflow-hidden font-sans">

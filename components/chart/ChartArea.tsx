@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useStore } from '@/store/app-store';
 import { ChartToolRow } from './ChartToolRow';
 import { OscillatorPanel } from './OscillatorPanel';
@@ -11,9 +11,8 @@ import { ChartSettings, DEFAULT_CHART_SETTINGS, formatPrice, loadChartSettings, 
 import { useMarketCandles } from './useMarketCandles';
 
 export function ChartArea() {
-  const { market, tools, addDrawing, clearDrawings } = useStore();
+  const { market, tools, addDrawing, clearDrawings, selectDrawing, deleteDrawing } = useStore();
   const { candles, connected, error } = useMarketCandles();
-
   const [settings, setSettings] = useState<ChartSettings>(DEFAULT_CHART_SETTINGS);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [menu, setMenu] = useState({ open: false, x: 0, y: 0 });
@@ -22,6 +21,8 @@ export function ChartArea() {
   useEffect(() => saveChartSettings(settings), [settings]);
 
   const latest = candles.at(-1);
+  const visibleDrawings = useMemo(() => tools.drawings.filter((d) => d.symbol === market.symbolDisplay && d.timeframe === market.timeframe), [tools.drawings, market.symbolDisplay, market.timeframe]);
+  const selected = visibleDrawings.find((d) => d.selected);
 
   return (
     <section className="h-full min-h-0 rounded-xl border border-[rgba(212,168,83,0.22)] bg-[#0b1014] overflow-hidden shadow-[0_10px_40px_rgba(0,0,0,0.45)]">
