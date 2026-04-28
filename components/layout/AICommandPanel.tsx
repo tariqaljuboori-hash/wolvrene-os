@@ -3,8 +3,10 @@
 import { useEffect } from 'react';
 import { useStore } from '@/store/app-store';
 
+const flow = ['WATCHING', 'SPAWNED', 'VALIDATING', 'ARMED'] as const;
+
 export function AICommandPanel() {
-  const { brain, market, hasAccess, setTier, setBrain, pushSignal, pushNews } = useStore();
+  const { signals, market, hasAccess, setSignalLifecycle, setCurrentTier } = useStore();
   const locked = !hasAccess('decision-brain');
 
   useEffect(() => {

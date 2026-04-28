@@ -22,7 +22,8 @@ export function useMarketCandles() {
 
   useEffect(() => {
     let active = true;
-    const fetchCandles = async () => {
+
+    async function fetchCandles() {
       try {
         setError(null);
         const res = await fetch(`/api/market/adapter?mode=candles&exchange=${market.exchange}&symbol=${encodeURIComponent(market.symbolRequest)}&timeframe=${market.timeframe}&limit=300`, { cache: 'no-store' });
@@ -37,12 +38,16 @@ export function useMarketCandles() {
         setError('Failed to load candles');
         setMarketSnapshot({ connected: false, loading: false, error: 'Failed to load candles' });
       }
-    };
+    }
 
     fetchCandles();
     const poll = setInterval(fetchCandles, 12000);
-    return () => { active = false; clearInterval(poll); };
-  }, [market.exchange, market.symbolRequest, market.timeframe]);
+
+    return () => {
+      active = false;
+      clearInterval(poll);
+    };
+  }, [market.exchange, market.symbolRequest, market.timeframe, setMarketSnapshot]);
 
   return useMemo(() => ({ candles, connected: market.connected, error }), [candles, market.connected, error]);
 }

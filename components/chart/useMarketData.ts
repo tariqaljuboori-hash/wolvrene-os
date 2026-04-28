@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useStore } from '@/store/app-store';
 
 export function useMarketData() {
