@@ -1,8 +1,6 @@
-// Store Types
-
 import { TierLevel } from '@/types/design';
 
-export type LayoutMode = 'normal' | 'pro';
+export type LayoutMode = 'normal' | 'pro' | 'hunt' | 'analyst' | 'scalper';
 
 export type ExchangeId =
   | 'binance'
@@ -13,27 +11,7 @@ export type ExchangeId =
   | 'coinbase'
   | 'yahoo';
 
-export interface MarketData {
-  symbol: string;
-  price: number;
-  change: number;
-  changePercent: number;
-  volume: number;
-  high24h: number;
-  low24h: number;
-  timestamp: number;
-}
-
-export type RightPanelTab = 'watchlist' | 'orders' | 'ai';
-
-export type DockTab =
-  | 'positions'
-  | 'watchlist'
-  | 'trades'
-  | 'journal'
-  | 'signals'
-  | 'calendar'
-  | 'news';
+export type MarketCategory = 'crypto' | 'forex' | 'indices' | 'commodities';
 
 export type Timeframe =
   | '1m'
@@ -48,67 +26,76 @@ export type Timeframe =
   | '1w'
   | '1M';
 
-export type DataFeedStatus =
-  | 'idle'
-  | 'loading'
-  | 'connected'
-  | 'reconnecting'
-  | 'error';
+export type DockTab = 'positions' | 'watchlist' | 'trades' | 'journal' | 'signals' | 'calendar' | 'news';
+export type RightPanelTab = 'watchlist' | 'orders' | 'ai';
 
-export interface ExchangeSymbol {
-  display: string;
-  exchange: ExchangeId;
-  exchangeSymbol: string;
-  base: string;
-  quote: string;
-}
+export type DecisionSignalState =
+  | 'NONE'
+  | 'WATCHING'
+  | 'SPAWNED'
+  | 'VALIDATING'
+  | 'FILTERED'
+  | 'ARMED'
+  | 'EXECUTE'
+  | 'MANAGED'
+  | 'EXIT'
+  | 'CANCELLED';
 
-export interface Candle {
-  time: number;
-  open: number;
-  high: number;
-  low: number;
-  close: number;
-  volume: number;
-}
-
-export interface AppState {
+export interface UiSlice {
   layoutMode: LayoutMode;
   sidebarCollapsed: boolean;
   rightPanelCollapsed: boolean;
   dockCollapsed: boolean;
-  currentTier: TierLevel;
-
-  currentExchange: ExchangeId;
-  currentSymbol: string;
-  currentExchangeSymbol: string;
-  currentTimeframe: Timeframe;
-  activeDrawingTool: string;
-
-  dataFeedStatus: DataFeedStatus;
-  lastMarketUpdate: number | null;
-
-  activeRightPanelTab: RightPanelTab;
   activeDockTab: DockTab;
+  activeRightPanelTab: RightPanelTab;
 }
 
-export interface FeatureGate {
-  key: string;
-  name: string;
-  tiers: TierLevel[];
-  description: string;
-}
-
-export interface WatchlistItem {
-  id: string;
-  symbol: string;
-  exchangeSymbol: string;
+export interface MarketSlice {
+  category: MarketCategory;
   exchange: ExchangeId;
-  name: string;
-  price: number;
+  source: 'crypto' | 'yahoo';
+  symbolDisplay: string;
+  symbolRequest: string;
+  timeframe: Timeframe;
+  livePrice: number;
   change: number;
   changePercent: number;
-  volume: number;
+  high24h: number;
+  low24h: number;
+  volume24h: number;
+  funding: number;
+  connected: boolean;
+  loading: boolean;
+  error: string | null;
+  lastUpdate: number | null;
+}
+
+export interface ChartSlice {
+  loading: boolean;
+  error: string | null;
+}
+
+export interface DrawingEntity {
+  id: string;
+  tool: string;
+  x: number;
+  y: number;
+  symbol: string;
+  timeframe: Timeframe;
+}
+
+export interface ToolsSlice {
+  activeTool: string;
+  toolOptions: Record<string, string | number | boolean>;
+  drawings: DrawingEntity[];
+}
+
+export interface AccountSlice {
+  tier: TierLevel;
+}
+
+export interface SubscriptionsSlice {
+  featureMatrix: Record<string, TierLevel[]>;
 }
 
 export interface Signal {
@@ -120,6 +107,39 @@ export interface Signal {
   reason: string;
 }
 
+export interface SignalsSlice {
+  lifecycle: DecisionSignalState;
+  confidence: number;
+  explanation: string;
+  items: Signal[];
+}
+
+export interface JournalEntry {
+  id: string;
+  title: string;
+  content: string;
+  tags: string[];
+  timestamp: Date;
+}
+
+export interface JournalSlice {
+  entries: JournalEntry[];
+}
+
+export interface SystemSlice {
+  dataFeedStatus: 'idle' | 'loading' | 'connected' | 'reconnecting' | 'error';
+}
+
+export interface WatchlistItem {
+  id: string;
+  exchange: ExchangeId;
+  category: MarketCategory;
+  displaySymbol: string;
+  requestSymbol: string;
+  base: string;
+  name: string;
+}
+
 export interface Order {
   id: string;
   symbol: string;
@@ -128,13 +148,5 @@ export interface Order {
   quantity: number;
   price?: number;
   status: 'pending' | 'filled' | 'cancelled';
-  timestamp: Date;
-}
-
-export interface JournalEntry {
-  id: string;
-  title: string;
-  content: string;
-  tags: string[];
   timestamp: Date;
 }
