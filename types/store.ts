@@ -2,12 +2,19 @@
 
 import { TierLevel } from '@/types/design';
 
+export type RightPanelTab = 'watchlist' | 'orders' | 'ai';
+export type DockTab = 'positions' | 'watchlist' | 'trades' | 'journal' | 'signals' | 'calendar' | 'news';
+
 export interface AppState {
   layoutMode: 'normal' | 'pro';
   sidebarCollapsed: boolean;
   rightPanelCollapsed: boolean;
   dockCollapsed: boolean;
   currentTier: TierLevel;
+  currentSymbol: string;
+  currentTimeframe: string;
+  activeRightPanelTab: RightPanelTab;
+  activeDockTab: DockTab;
 }
 
 export interface FeatureGate {

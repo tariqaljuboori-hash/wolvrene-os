@@ -1,249 +1,80 @@
-// filepath: components/chart/ChartArea.tsx
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { Badge } from '@/components/ui';
+import Image from 'next/image';
+import { useMemo } from 'react';
+import { ChartToolRow } from './ChartToolRow';
+import { OscillatorPanel } from './OscillatorPanel';
 
-// Chart data interface for real data integration
-export interface ChartDataPoint {
-  time: number;
-  open: number;
-  high: number;
-  low: number;
-  close: number;
-  volume?: number;
-}
+type Candle = { o: number; h: number; l: number; c: number; v: number };
 
-export interface ChartConfig {
-  symbol: string;
-  timeframe: string;
-  showVolume: boolean;
-  showGrid: boolean;
-}
-
-// Mock data generator for demo
-function generateMockData(count: number = 100): ChartDataPoint[] {
-  const data: ChartDataPoint[] = [];
-  let basePrice = 67000;
-  const now = Date.now();
-  
-  for (let i = 0; i < count; i++) {
-    const volatility = (Math.random() - 0.5) * 200;
-    const open = basePrice + volatility;
-    const close = open + (Math.random() - 0.5) * 150;
-    const high = Math.max(open, close) + Math.random() * 50;
-    const low = Math.min(open, close) - Math.random() * 50;
-    
-    data.push({
-      time: now - (count - i) * 60000,
-      open,
-      high,
-      low,
-      close,
-      volume: Math.random() * 1000000000,
-    });
-    
-    basePrice = close;
+function buildCandles(): Candle[] {
+  const out: Candle[] = [];
+  let prev = 77212;
+  for (let i = 0; i < 90; i += 1) {
+    const swing = Math.sin(i / 7) * 850 + Math.cos(i / 5) * 420;
+    const o = prev;
+    const c = 76000 + swing + (i % 6 - 2) * 60;
+    const h = Math.max(o, c) + 250 + (i % 5) * 20;
+    const l = Math.min(o, c) - 240 - (i % 4) * 22;
+    const v = 120 + ((i * 13) % 100);
+    out.push({ o, h, l, c, v });
+    prev = c;
   }
-  
-  return data;
+  return out;
 }
 
 export function ChartArea() {
-  const [data, setData] = useState<ChartDataPoint[]>([]);
-  const [selectedTimeframe, setSelectedTimeframe] = useState('1H');
-  const [isLoading, setIsLoading] = useState(true);
-  const chartRef = useRef<HTMLDivElement>(null);
-  
-  // Load mock data
-  useEffect(() => {
-    setIsLoading(true);
-    // Simulate data loading
-    setTimeout(() => {
-      setData(generateMockData(100));
-      setIsLoading(false);
-    }, 300);
-  }, [selectedTimeframe]);
-
-  const timeframes = ['1m', '5m', '15m', '1H', '4H', '1D', '1W', '1M'];
-  
-  const currentPrice = data.length > 0 ? data[data.length - 1].close : 0;
-  const previousPrice = data.length > 1 ? data[data.length - 2].close : currentPrice;
-  const priceChange = currentPrice - previousPrice;
-  const priceChangePercent = previousPrice > 0 ? (priceChange / previousPrice) * 100 : 0;
-
-  // Calculate price range for chart scaling
-  const prices = data.flatMap(d => [d.high, d.low]);
-  const maxPrice = prices.length > 0 ? Math.max(...prices) : 0;
-  const minPrice = prices.length > 0 ? Math.min(...prices) : 0;
-  const priceRange = maxPrice - minPrice || 1;
+  const candles = useMemo(() => buildCandles(), []);
 
   return (
-    <div className="flex-1 flex flex-col bg-[#0a0a0b] p-2">
-      {/* Chart Header - Compact */}
-      <div className="flex items-center justify-between px-2 py-1 mb-2">
-        <div className="flex items-center gap-3">
-          <span className="text-lg font-semibold text-[#fafafa]">BTC/USDT</span>
-          <span className="text-xl font-bold text-[#fafafa]">
-            ${currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </span>
-          <Badge variant={priceChange >= 0 ? 'success' : 'error'}>
-            {priceChange >= 0 ? '+' : ''}{priceChangePercent.toFixed(2)}%
-          </Badge>
+    <section className="h-full min-h-0 rounded-xl border border-[rgba(212,168,83,0.22)] bg-[#0b1014] overflow-hidden shadow-[0_10px_40px_rgba(0,0,0,0.45)]">
+      <ChartToolRow />
+      <div className="h-[calc(100%-214px)] min-h-[420px] relative bg-[#060d14] border-b border-[rgba(212,168,83,0.14)] overflow-hidden">
+        <div className="absolute inset-0" style={{ backgroundImage: 'linear-gradient(to right, rgba(90,102,116,0.15) 1px, transparent 1px), linear-gradient(to bottom, rgba(90,102,116,0.15) 1px, transparent 1px)', backgroundSize: '72px 56px' }} />
+        <div className="absolute top-4 left-4 z-20 text-[32px]">
+          <div className="text-xl text-[#f3f4f6]">BTCUSDT.P · 1h · WOLVRENE</div>
+          <div className="mt-1 text-[#ff4b42]">O 77,212.1&nbsp; H 77,450.0&nbsp; L 77,050.3&nbsp; C 76,778.20&nbsp; -433.90 (-0.56%)</div>
+          <div className="mt-1 text-[#f3f4f6]">Vol · BTC <span className="text-[#ff6633]">1.23K</span></div>
         </div>
 
-        <div className="flex items-center gap-1">
-          {timeframes.map((tf) => (
-            <button
-              key={tf}
-              onClick={() => setSelectedTimeframe(tf)}
-              className={`
-                px-2 py-1 rounded text-xs font-medium transition-colors
-                ${selectedTimeframe === tf 
-                  ? 'bg-[#e87b3a] text-white' 
-                  : 'text-[#71717a] hover:text-[#fafafa] hover:bg-[#1f1f23]'
-                }
-              `}
-            >
-              {tf}
-            </button>
-          ))}
+        <Image src="/window.svg" alt="Wolvrene watermark" width={420} height={420} className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-[0.08]" />
+
+        <div className="absolute top-14 right-32 z-30 rounded-lg bg-[#10151bd9] border border-[rgba(212,168,83,0.2)] px-2 py-1 flex gap-2 text-sm text-[#c9d0d8]">{['╱', '╲', '◫', 'T', '◻', '🗑', '✎'].map((i) => <span key={i} className="w-6 h-6 grid place-items-center">{i}</span>)}</div>
+
+        <div className="absolute inset-x-5 bottom-14 top-20">
+          <svg className="w-full h-full" preserveAspectRatio="none" viewBox="0 0 1200 560">
+            {candles.map((c, i) => {
+              const x = 30 + i * 12.6;
+              const yScale = (n: number) => 520 - ((n - 71000) / (82000 - 71000)) * 470;
+              const wick = '#9ea5ae';
+              const up = c.c >= c.o;
+              const body = up ? '#f2f4f7' : '#f6a400';
+              return (
+                <g key={i}>
+                  <line x1={x} y1={yScale(c.h)} x2={x} y2={yScale(c.l)} stroke={wick} strokeWidth="1.4" />
+                  <rect x={x - 3.6} y={Math.min(yScale(c.o), yScale(c.c))} width={7.2} height={Math.max(2, Math.abs(yScale(c.o) - yScale(c.c)))} fill={body} rx="1" />
+                  <rect x={x - 3.6} y={540 - c.v} width={7.2} height={c.v} fill={up ? 'rgba(145,150,156,0.45)' : 'rgba(246,164,0,0.45)'} />
+                </g>
+              );
+            })}
+          </svg>
         </div>
+
+        <div className="absolute right-2 top-14 bottom-14 text-xs text-[#c8ced6] flex flex-col justify-between text-right">
+          {['82,000.00', '81,000.00', '80,000.00', '79,000.00', '78,000.00', '77,000.00', '76,000.00', '75,000.00', '74,000.00', '73,000.00', '72,000.00', '71,000.00'].map((p) => <span key={p}>{p}</span>)}
+        </div>
+        <div className="absolute right-2 top-[44%] px-2 py-1 rounded bg-[#9d1b13] text-[#fff] text-xs">76,778.20</div>
+
+        <div className="absolute bottom-4 left-8 right-20 flex justify-between text-xs text-[#8b949e]">
+          {['21', '12:00', '22', '12:00', '24', '12:00', '25', '12:00', '26', '12:00', '27'].map((t) => <span key={t}>{t}</span>)}
+        </div>
+
+        <div className="absolute left-[24%] top-[22%] px-3 py-1 border border-[#ff4444] bg-[#390a08] rounded-md text-[#ff4444] text-sm">AI SHORT</div>
+        <div className="absolute left-[40%] top-[35%] px-3 py-1 border border-[#ff4444] bg-[#390a08] rounded-md text-[#ff4444] text-sm">AI SHORT</div>
+        <div className="absolute left-[33%] bottom-[24%] px-3 py-1 border border-[#00d084] bg-[#032d26] rounded-md text-[#00d084] text-sm">AI LONG</div>
+        <div className="absolute left-[70%] bottom-[24%] px-3 py-1 border border-[#00d084] bg-[#032d26] rounded-md text-[#00d084] text-sm">AI LONG</div>
       </div>
-
-      {/* Main Chart Canvas */}
-      <div 
-        ref={chartRef}
-        className="flex-1 relative bg-[#0d0d0f] rounded-lg overflow-hidden"
-      >
-        {isLoading ? (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-[#71717a]">Loading chart...</div>
-          </div>
-        ) : (
-          <>
-            {/* Grid Lines */}
-            <div className="absolute inset-0 pointer-events-none">
-              {/* Horizontal grid */}
-              {[...Array(6)].map((_, i) => (
-                <div
-                  key={`h-${i}`}
-                  className="absolute w-full border-b border-[#1f1f23]"
-                  style={{ top: `${(i + 1) * 16.66}%` }}
-                />
-              ))}
-              {/* Vertical grid */}
-              {[...Array(8)].map((_, i) => (
-                <div
-                  key={`v-${i}`}
-                  className="absolute h-full border-r border-[#1f1f23]"
-                  style={{ left: `${(i + 1) * 12.5}%` }}
-                />
-              ))}
-            </div>
-
-            {/* Candlestick Chart */}
-            <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none">
-              <defs>
-                <linearGradient id="candleGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#22c55e" stopOpacity="0.3" />
-                  <stop offset="100%" stopColor="#22c55e" stopOpacity="0" />
-                </linearGradient>
-              </defs>
-              
-              {/* Candlesticks */}
-              {data.map((candle, i) => {
-                const x = (i / (data.length - 1)) * 100;
-                const candleWidth = 100 / data.length * 0.6;
-                const isGreen = candle.close >= candle.open;
-                const color = isGreen ? '#22c55e' : '#ef4444';
-                
-                const highY = 100 - ((candle.high - minPrice) / priceRange) * 100;
-                const lowY = 100 - ((candle.low - minPrice) / priceRange) * 100;
-                const openY = 100 - ((candle.open - minPrice) / priceRange) * 100;
-                const closeY = 100 - ((candle.close - minPrice) / priceRange) * 100;
-                
-                return (
-                  <g key={i}>
-                    {/* Wick */}
-                    <line
-                      x1={`${x}%`}
-                      y1={`${highY}%`}
-                      x2={`${x}%`}
-                      y2={`${lowY}%`}
-                      stroke={color}
-                      strokeWidth="1"
-                    />
-                    {/* Body */}
-                    <rect
-                      x={`${x - candleWidth/2}%`}
-                      y={`${Math.min(openY, closeY)}%`}
-                      width={`${candleWidth}%`}
-                      height={`${Math.abs(closeY - openY)}%`}
-                      fill={color}
-                      rx="1"
-                    />
-                  </g>
-                );
-              })}
-            </svg>
-
-            {/* Current Price Line */}
-            {data.length > 0 && (
-              <div 
-                className="absolute right-0 flex items-center"
-                style={{
-                  top: `${100 - ((currentPrice - minPrice) / priceRange) * 100}%`,
-                }}
-              >
-                <div className="h-px flex-1 bg-[#e87b3a]" />
-                <div className="bg-[#e87b3a] px-2 py-0.5 rounded-l text-xs font-medium text-white">
-                  ${currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </div>
-              </div>
-            )}
-
-            {/* Chart Controls */}
-            <div className="absolute top-2 right-2 flex gap-1">
-              <button className="p-1.5 bg-[#18181b] hover:bg-[#27272a] rounded transition-colors" title="Zoom In">
-                <svg className="w-3.5 h-3.5 text-[#71717a]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
-                </svg>
-              </button>
-              <button className="p-1.5 bg-[#18181b] hover:bg-[#27272a] rounded transition-colors" title="Zoom Out">
-                <svg className="w-3.5 h-3.5 text-[#71717a]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7" />
-                </svg>
-              </button>
-              <button className="p-1.5 bg-[#18181b] hover:bg-[#27272a] rounded transition-colors" title="Settings">
-                <svg className="w-3.5 h-3.5 text-[#71717a]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-                </svg>
-              </button>
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* Chart Footer - Stats */}
-      <div className="grid grid-cols-4 gap-2 mt-2 px-2">
-        <div className="bg-[#18181b] rounded px-2 py-1">
-          <div className="text-[#71717a] text-xs">24h High</div>
-          <div className="text-[#fafafa] text-sm font-medium">${(currentPrice * 1.02).toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
-        </div>
-        <div className="bg-[#18181b] rounded px-2 py-1">
-          <div className="text-[#71717a] text-xs">24h Low</div>
-          <div className="text-[#fafafa] text-sm font-medium">${(currentPrice * 0.98).toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
-        </div>
-        <div className="bg-[#18181b] rounded px-2 py-1">
-          <div className="text-[#71717a] text-xs">24h Vol</div>
-          <div className="text-[#fafafa] text-sm font-medium">$28.5B</div>
-        </div>
-        <div className="bg-[#18181b] rounded px-2 py-1">
-          <div className="text-[#71717a] text-xs">Open Interest</div>
-          <div className="text-[#fafafa] text-sm font-medium">$12.8B</div>
-        </div>
-      </div>
-    </div>
+      <OscillatorPanel />
+    </section>
   );
 }

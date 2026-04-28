@@ -1,39 +1,35 @@
-// filepath: components/layout/AppShell.tsx
 'use client';
 
-import { ReactNode } from 'react';
+import { useStore } from '@/store/app-store';
+import { TopHeader } from './TopHeader';
 import { DrawingToolbar } from './DrawingToolbar';
-import { TradingControls } from './TradingControls';
 import { RightPanel } from './RightPanel';
-import { Dock } from './Dock';
 import { ChartArea } from '@/components/chart';
+import { BottomDock } from './BottomDock';
+import { BottomInsights } from './BottomInsights';
+import { StatusNewsBar } from './StatusNewsBar';
 
-interface AppShellProps {
-  children?: ReactNode;
-}
+export function AppShell() {
+  const { state } = useStore();
+  const isPro = state.layoutMode === 'pro';
 
-export function AppShell({ children }: AppShellProps) {
   return (
-    <div className="h-screen flex flex-col bg-[#0a0a0b] overflow-hidden">
-      {/* Top Trading Controls */}
-      <TradingControls />
-
-      {/* Main Content Area */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Left Drawing Toolbar */}
+    <div className="h-screen bg-[#050607] text-[#f3f4f6] flex flex-col overflow-hidden">
+      <TopHeader />
+      <div className="flex-1 min-h-0 flex overflow-hidden">
         <DrawingToolbar />
-
-        {/* Center - Chart Area */}
-        <main className="flex-1 flex flex-col overflow-hidden bg-[#0a0a0b]">
-          <ChartArea />
+        <main className="flex-1 min-w-0 p-2 space-y-2 overflow-hidden">
+          <div className="h-[62%] min-h-[500px] flex gap-2">
+            <div className="flex-1 min-w-0"><ChartArea /></div>
+            {!isPro && <RightPanel />}
+          </div>
+          <BottomDock />
+          <div className={`${isPro ? 'h-[18%]' : 'h-[28%]'} min-h-[210px]`}>
+            <BottomInsights />
+          </div>
         </main>
-
-        {/* Right Panel - Watchlist/Orders/AI */}
-        <RightPanel />
       </div>
-
-      {/* Bottom Dock with Tabs */}
-      <Dock />
+      <StatusNewsBar />
     </div>
   );
 }
